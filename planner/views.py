@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .forms import AssignmentForm, SignUpForm
@@ -105,7 +106,7 @@ def assignment_create(request):
             return redirect(assignment)
     else:
         form = AssignmentForm()
-    return render(request, 'planner/assignment_form.html', {'form': form})
+    return render(request, 'planner/assignment_form.html', {'form': form, 'page_title': 'Add Assignment'})
 
 
 @login_required
@@ -114,6 +115,41 @@ def assignment_detail(request, pk):
     # as one that doesn't exist, so IDs can't be probed.
     assignment = get_object_or_404(Assignment, pk=pk, owner=request.user)
     return render(request, 'planner/assignment_detail.html', {'assignment': assignment})
+
+
+@login_required
+def assignment_update(request, pk):
+    assignment = get_object_or_404(Assignment, pk=pk, owner=request.user)
+    if request.method == 'POST':
+        form = AssignmentForm(request.POST, instance=assignment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Saved changes to "{assignment.title}".')
+            return redirect(assignment)
+    else:
+        form = AssignmentForm(instance=assignment)
+    context = {'form': form, 'assignment': assignment, 'page_title': 'Edit Assignment'}
+    return render(request, 'planner/assignment_form.html', context)
+
+
+@login_required
+@require_POST
+def assignment_toggle_complete(request, pk):
+    assignment = get_object_or_404(Assignment, pk=pk, owner=request.user)
+    assignment.is_completed = not assignment.is_completed
+    assignment.save(update_fields=['is_completed', 'updated_at'])
+    if assignment.is_completed:
+        messages.success(request, f'Marked "{assignment.title}" as completed.')
+    else:
+        messages.info(request, f'Marked "{assignment.title}" as not completed.')
+
+    # Go back to the page the button was on (e.g. a filtered list), but only
+    # if that address is on this site, so it can't redirect somewhere else.
+    next_url = request.POST.get('next')
+    if next_url and url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(next_url)
+    return redirect(assignment)
 
 
 @login_required

@@ -131,6 +131,7 @@ class LoginRequiredTests(TestCase):
             reverse('assignment_list'),
             reverse('assignment_create'),
             reverse('assignment_detail', args=[assignment.pk]),
+            reverse('assignment_update', args=[assignment.pk]),
         ]
         for url in urls:
             with self.subTest(url=url):
@@ -185,6 +186,105 @@ class OwnershipTests(TestCase):
         assignment = Assignment.objects.get(title='New essay')
         self.assertEqual(assignment.owner, self.alice)
         self.assertRedirects(response, reverse('assignment_detail', args=[assignment.pk]))
+
+
+class EditAssignmentTests(TestCase):
+    def setUp(self):
+        self.alice = User.objects.create_user('alice', password=make_password())
+        self.bob = User.objects.create_user('bob', password=make_password())
+        self.assignment = make_assignment(self.alice, 'Alice homework', priority=Assignment.Priority.LOW)
+        self.edit_url = reverse('assignment_update', args=[self.assignment.pk])
+        self.new_data = {
+            'title': 'Alice homework (revised)',
+            'course_name': 'INF601',
+            'description': 'Now with more detail',
+            'due_date': (timezone.localdate() + timedelta(days=10)).isoformat(),
+            'priority': Assignment.Priority.HIGH,
+        }
+
+    def test_edit_form_is_prefilled_with_current_values(self):
+        self.client.force_login(self.alice)
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, 'Edit Assignment')
+        self.assertContains(response, 'value="Alice homework"')
+        self.assertContains(response, f'value="{self.assignment.due_date.isoformat()}"')
+
+    def test_owner_can_edit_and_is_redirected_to_detail(self):
+        self.client.force_login(self.alice)
+        response = self.client.post(self.edit_url, self.new_data)
+        self.assertRedirects(response, reverse('assignment_detail', args=[self.assignment.pk]))
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.title, 'Alice homework (revised)')
+        self.assertEqual(self.assignment.priority, Assignment.Priority.HIGH)
+
+    def test_invalid_edit_shows_errors_and_changes_nothing(self):
+        self.client.force_login(self.alice)
+        response = self.client.post(self.edit_url, dict(self.new_data, title=''))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('title', response.context['form'].errors)
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.title, 'Alice homework')
+
+    def test_owner_cannot_be_changed_by_posting_owner(self):
+        self.client.force_login(self.alice)
+        self.client.post(self.edit_url, dict(self.new_data, owner=self.bob.pk))
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.owner, self.alice)
+
+    def test_other_user_cannot_view_or_submit_edit_form(self):
+        self.client.force_login(self.bob)
+        self.assertEqual(self.client.get(self.edit_url).status_code, 404)
+        self.assertEqual(self.client.post(self.edit_url, self.new_data).status_code, 404)
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.title, 'Alice homework')
+
+
+class ToggleCompleteTests(TestCase):
+    def setUp(self):
+        self.alice = User.objects.create_user('alice', password=make_password())
+        self.bob = User.objects.create_user('bob', password=make_password())
+        self.assignment = make_assignment(self.alice, 'Alice homework')
+        self.toggle_url = reverse('assignment_toggle_complete', args=[self.assignment.pk])
+        self.detail_url = reverse('assignment_detail', args=[self.assignment.pk])
+
+    def test_detail_and_list_pages_have_toggle_buttons(self):
+        self.client.force_login(self.alice)
+        form_tag = f'<form method="post" action="{self.toggle_url}">'
+        self.assertContains(self.client.get(self.detail_url), form_tag)
+        self.assertContains(self.client.get(self.detail_url), 'Mark Complete')
+        self.assertContains(self.client.get(reverse('assignment_list')), form_tag)
+
+    def test_toggle_marks_complete_then_not_complete(self):
+        self.client.force_login(self.alice)
+        self.assertRedirects(self.client.post(self.toggle_url), self.detail_url)
+        self.assignment.refresh_from_db()
+        self.assertTrue(self.assignment.is_completed)
+
+        self.client.post(self.toggle_url)
+        self.assignment.refresh_from_db()
+        self.assertFalse(self.assignment.is_completed)
+
+    def test_toggle_returns_to_the_list_page_it_was_clicked_on(self):
+        self.client.force_login(self.alice)
+        list_url = reverse('assignment_list') + '?status=active'
+        self.assertRedirects(self.client.post(self.toggle_url, {'next': list_url}), list_url)
+
+    def test_toggle_ignores_next_urls_on_other_sites(self):
+        self.client.force_login(self.alice)
+        response = self.client.post(self.toggle_url, {'next': 'https://evil.example.com/'})
+        self.assertRedirects(response, self.detail_url)
+
+    def test_get_request_does_not_toggle(self):
+        self.client.force_login(self.alice)
+        self.assertEqual(self.client.get(self.toggle_url).status_code, 405)
+        self.assignment.refresh_from_db()
+        self.assertFalse(self.assignment.is_completed)
+
+    def test_other_user_cannot_toggle(self):
+        self.client.force_login(self.bob)
+        self.assertEqual(self.client.post(self.toggle_url).status_code, 404)
+        self.assignment.refresh_from_db()
+        self.assertFalse(self.assignment.is_completed)
 
 
 class DeleteAssignmentTests(TestCase):

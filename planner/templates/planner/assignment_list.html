@@ -29,6 +29,7 @@
                         <th scope="col">Due date</th>
                         <th scope="col">Priority</th>
                         <th scope="col">Status</th>
+                        <th scope="col" class="text-end">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,6 +48,22 @@
                             </td>
                             <td>{% include 'planner/includes/priority_badge.html' %}</td>
                             <td>{% include 'planner/includes/status_badge.html' %}</td>
+                            <td class="text-end">
+                                <form method="post" action="{% url 'assignment_toggle_complete' assignment.pk %}">
+                                    {% csrf_token %}
+                                    {# Return to this same list (and filter tab) afterwards. #}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    {% if assignment.is_completed %}
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Undo
+                                        </button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-sm btn-outline-success text-nowrap">
+                                            <i class="bi bi-check-lg"></i> Complete
+                                        </button>
+                                    {% endif %}
+                                </form>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>

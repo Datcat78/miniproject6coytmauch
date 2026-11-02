@@ -37,7 +37,7 @@
                         <a class="nav-link {% if url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if url_name == 'assignment_list' or url_name == 'assignment_detail' %}active{% endif %}"
+                        <a class="nav-link {% if url_name == 'assignment_list' or url_name == 'assignment_detail' or url_name == 'assignment_update' %}active{% endif %}"
                            href="{% url 'assignment_list' %}">Assignments</a>
                     </li>
                     <li class="nav-item">

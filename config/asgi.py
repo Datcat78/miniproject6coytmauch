@@ -1,3 +1,7 @@
+### INF601 - Advanced Programming in Python
+### Coyt Mauch
+### Mini Project 6
+
 """
 ASGI config for config project.
 

@@ -164,7 +164,7 @@ work on Linux, so never copy it between machines.
 1. Open PowerShell and go to the project folder:
 
    ```powershell
-   cd path\to\miniproject6coytmauch
+   cd path\to\miniproject6
    ```
 
 2. Create and activate a virtual environment:

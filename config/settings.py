@@ -1,3 +1,7 @@
+### INF601 - Advanced Programming in Python
+### Coyt Mauch
+### Mini Project 6
+
 """
 Django settings for config project.
 
@@ -10,7 +14,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -18,14 +25,54 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-gofn1!2qx9otr-u%!#80fhf*d#o$^&oc96h4s#c6c!*oag#1e-'
+#
+# Server addresses and secrets come from environment variables, so neither is
+# ever written into the code. With none of them set, the project runs for
+# local development on localhost.
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = []
+# Host name the site is opened with on a server such as the course Linux dev
+# box, e.g. DJANGO_SITE_HOSTNAME=devbox.example.edu (separate several names
+# with commas). Leave it unset for local development.
+site_hostnames = [
+    name.strip().lower()
+    for name in os.environ.get('DJANGO_SITE_HOSTNAME', '').split(',')
+    if name.strip()
+]
+for name in site_hostnames:
+    if '/' in name or ':' in name:
+        raise ImproperlyConfigured(
+            'DJANGO_SITE_HOSTNAME must be a bare host name such as devbox.example.edu, '
+            f'without "http://" or a port; got {name!r}.'
+        )
+
+# SECURITY WARNING: keep the secret key used in production secret!
+# Supply it with DJANGO_SECRET_KEY. The fallback is the development key that
+# startproject generated. It is visible in the source code, so it is only
+# accepted for local development: DEBUG on and no DJANGO_SITE_HOSTNAME.
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '').strip() or (
+    'django-insecure-gofn1!2qx9otr-u%!#80fhf*d#o$^&oc96h4s#c6c!*oag#1e-'
+)
+if SECRET_KEY.startswith('django-insecure') and (site_hostnames or not DEBUG):
+    raise ImproperlyConfigured(
+        'Set DJANGO_SECRET_KEY to your own secret key when DJANGO_SITE_HOSTNAME is set '
+        'or DJANGO_DEBUG is off.'
+    )
+
+# localhost always works for development; the site host name(s) are added to it.
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', *site_hostnames]
+
+# Origins allowed to submit POST forms (log in, add, delete, ...). A browser
+# that opens http://<hostname>:8000/ directly already passes Django's
+# same-origin check; these entries also cover reaching the site through HTTPS
+# or a forwarding proxy in front of the dev box.
+CSRF_TRUSTED_ORIGINS = [
+    origin
+    for name in site_hostnames
+    for origin in (f'http://{name}:8000', f'http://{name}', f'https://{name}')
+]
 
 
 # Application definition
@@ -105,7 +152,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# Central time, so "due today" and "overdue" change at local midnight.
+TIME_ZONE = 'America/Chicago'
 
 USE_I18N = True
 

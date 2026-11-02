@@ -51,10 +51,25 @@
     </div>
     <div class="card-footer bg-body d-flex flex-wrap justify-content-between gap-2">
         <a href="{% url 'assignment_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to list</a>
-        {# Opens the confirmation modal below; this button does not delete anything itself. #}
-        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-            <i class="bi bi-trash"></i> Delete Assignment
-        </button>
+        <div class="d-flex flex-wrap gap-2">
+            <form method="post" action="{% url 'assignment_toggle_complete' assignment.pk %}">
+                {% csrf_token %}
+                {% if assignment.is_completed %}
+                    <button type="submit" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Mark Not Completed
+                    </button>
+                {% else %}
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Mark Complete</button>
+                {% endif %}
+            </form>
+            <a href="{% url 'assignment_update' assignment.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+            {# Opens the confirmation modal below; this button does not delete anything itself. #}
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                <i class="bi bi-trash"></i> Delete Assignment
+            </button>
+        </div>
     </div>
 </div>
 

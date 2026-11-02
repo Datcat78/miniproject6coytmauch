@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+
+### INF601 - Advanced Programming in Python
+### Coyt Mauch
+### Mini Project 6
+
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
