@@ -445,8 +445,6 @@ Test accounts use randomly generated passwords, so no passwords are written into
 
 ## AI Usage
 
-<!-- Review this section and edit anything that doesn't match exactly how you worked. -->
-
 I used **Claude Code** while building this project. I wrote the project requirements, chose the features, and directed the work one stage at a time, reviewing each stage before moving on to the next.
 
 **How the AI contributed:** It generated the code for the model, admin, forms, views, URLs,
