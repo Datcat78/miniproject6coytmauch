@@ -26,36 +26,40 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 #
-# Server addresses and secrets come from environment variables, so neither is
-# ever written into the code. With none of them set, the project runs for
-# local development on localhost.
+# Secrets come from environment variables, so none is ever written into the
+# code. With no variables set, the site answers on localhost (for testing) and
+# on the course dev box host name below.
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-# Host name the site is opened with on a server such as the course Linux dev
-# box, e.g. DJANGO_SITE_HOSTNAME=devbox.example.edu (separate several names
-# with commas). Leave it unset for local development.
-site_hostnames = [
+# The FHSU course Linux dev box this site runs on (port 8000).
+DEV_BOX_HOSTNAME = 'dev-student14.fhsucyber.com'
+
+# Optional additional host names for another server, separated by commas,
+# e.g. DJANGO_SITE_HOSTNAME=other-server.example.edu. Not needed for the dev box.
+extra_hostnames = [
     name.strip().lower()
     for name in os.environ.get('DJANGO_SITE_HOSTNAME', '').split(',')
     if name.strip()
 ]
-for name in site_hostnames:
+for name in extra_hostnames:
     if '/' in name or ':' in name:
         raise ImproperlyConfigured(
             'DJANGO_SITE_HOSTNAME must be a bare host name such as devbox.example.edu, '
             f'without "http://" or a port; got {name!r}.'
         )
+site_hostnames = [DEV_BOX_HOSTNAME, *(name for name in extra_hostnames if name != DEV_BOX_HOSTNAME)]
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # Supply it with DJANGO_SECRET_KEY. The fallback is the development key that
-# startproject generated. It is visible in the source code, so it is only
-# accepted for local development: DEBUG on and no DJANGO_SITE_HOSTNAME.
+# startproject generated. It is visible in the source code, so it is refused
+# when DEBUG is off or DJANGO_SITE_HOSTNAME is set, and DJANGO_SECRET_KEY
+# should also be set when running on the dev box.
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '').strip() or (
     'django-insecure-gofn1!2qx9otr-u%!#80fhf*d#o$^&oc96h4s#c6c!*oag#1e-'
 )
-if SECRET_KEY.startswith('django-insecure') and (site_hostnames or not DEBUG):
+if SECRET_KEY.startswith('django-insecure') and (extra_hostnames or not DEBUG):
     raise ImproperlyConfigured(
         'Set DJANGO_SECRET_KEY to your own secret key when DJANGO_SITE_HOSTNAME is set '
         'or DJANGO_DEBUG is off.'

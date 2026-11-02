@@ -23,12 +23,12 @@ are private: users can only see and manage their own work.
 7. [Database Initialization](#database-initialization)
 8. [Creating a Superuser](#creating-a-superuser)
 9. [Running the Server](#running-the-server)
-10. [Using the Application](#using-the-application)
-11. [Django Admin](#django-admin)
-12. [Running the Tests](#running-the-tests)
-13. [Security](#security)
-14. [Troubleshooting](#troubleshooting)
-15. [Rubric Checklist](#rubric-checklist)
+10. [Configuration](#configuration)
+11. [Using the Application](#using-the-application)
+12. [Django Admin](#django-admin)
+13. [Running the Tests](#running-the-tests)
+14. [Security](#security)
+15. [Troubleshooting](#troubleshooting)
 16. [AI Usage](#ai-usage)
 
 ---
@@ -48,7 +48,11 @@ are private: users can only see and manage their own work.
 - **Add assignment form** – a Django `ModelForm` with title, course name, description, a date-picker
   for the due date, and a priority (Low / Medium / High). The owner is set automatically to the
   logged-in user. Invalid fields are outlined in red with an error message.
-- **Assignment details** – every field plus created/updated timestamps.
+- **Assignment details** – every field plus created/updated timestamps, with buttons to edit,
+  mark complete, or delete.
+- **Edit assignments** – the same form as Add, pre-filled with the assignment's current values.
+- **Mark complete** – one click on the detail page, or on a row in the list, toggles an assignment
+  between active and completed. From the list, you stay on the same filter tab.
 - **Delete with confirmation** – a **Delete Assignment** button opens a Bootstrap modal with
   **Cancel** and **Confirm Delete** buttons. Confirm Delete submits a POST form with a CSRF token.
 - **Customized Django admin** – columns, filters, search, grouped form sections, a date drill-down,
@@ -69,6 +73,8 @@ are private: users can only see and manage their own work.
 | Assignment List | `/assignments/` (optional `?status=active`, `completed`, `overdue`) | Yes | `planner/assignment_list.html` |
 | Add Assignment | `/assignments/new/` | Yes | `planner/assignment_form.html` |
 | Assignment Detail | `/assignments/<id>/` | Yes | `planner/assignment_detail.html` |
+| Edit Assignment | `/assignments/<id>/edit/` | Yes | `planner/assignment_form.html` (shared with Add) |
+| Mark complete / not completed | `/assignments/<id>/toggle/` (POST only, from a button) | Yes | – (redirects back) |
 | Delete Assignment | `/assignments/<id>/delete/` (POST only, from the modal) | Yes | – (redirects to the list) |
 | Django Admin | `/admin/` | Staff only | Django admin |
 
@@ -110,14 +116,14 @@ miniproject6/
 ├── README.md                  # This file
 ├── .gitignore                 # Keeps .venv, db.sqlite3, and caches out of git
 ├── config/                    # Project settings package
-│   ├── settings.py            # Installed apps, database, login redirects, etc.
+│   ├── settings.py            # Apps, database, login redirects, allowed hosts, secret key
 │   ├── urls.py                # Root URLs: /admin/ and the planner app
 │   ├── asgi.py / wsgi.py      # Server entry points
 └── planner/                   # The application
     ├── models.py              # Assignment model
     ├── admin.py               # Customized admin for Assignment
     ├── forms.py               # AssignmentForm, SignUpForm, LoginForm (Bootstrap-styled)
-    ├── views.py               # Page views (home, dashboard, list, add, detail, delete, register)
+    ├── views.py               # Views: home, about, register, dashboard, list, add, detail, edit, toggle, delete
     ├── urls.py                # The app's URL routes
     ├── tests.py               # Automated tests
     ├── apps.py                # App configuration
@@ -161,11 +167,14 @@ work on Linux, so never copy it between machines.
 
 ### Windows (PowerShell)
 
-1. Open PowerShell and go to the project folder:
+1. Open PowerShell, download the project, and go into its folder:
 
    ```powershell
-   cd path\to\miniproject6
+   git clone https://github.com/Datcat78/miniproject6coytmauch.git miniproject6
+   cd miniproject6
    ```
+
+   If you already have the project, just `cd` into its folder.
 
 2. Create and activate a virtual environment:
 
@@ -186,12 +195,15 @@ work on Linux, so never copy it between machines.
 
 ### Linux (university dev box)
 
-1. Copy the project to the dev box (for example with `git clone <your-repository-url>`) and go into
-   the folder:
+1. Download the project into your home directory and go into its folder:
 
    ```bash
+   cd ~
+   git clone https://github.com/Datcat78/miniproject6coytmauch.git miniproject6
    cd ~/miniproject6
    ```
+
+   To get later updates, run `git pull` inside the folder.
 
 2. Confirm Python is 3.10 or newer:
 
@@ -261,39 +273,71 @@ Open **http://127.0.0.1:8000/** in your browser. Port 8000 is Django's default.
 
 ### On the Linux dev box (port 8000)
 
-**Option A – SSH tunnel (works with the current settings).** From your own computer, connect with
-port forwarding:
+The settings already allow the course dev box's host name, **dev-student14.fhsucyber.com**, so it
+needs no configuration. Do give the dev box its own secret key, though: the fallback key in
+`config/settings.py` is visible to anyone who can read this repository.
+
+1. **One time only**, with the virtual environment active, create a secret-key file that only you
+   can read:
+
+   ```bash
+   (umask 077; python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())" > ~/.miniproject6_secret_key)
+   ```
+
+2. **Each time**, load the key and start the server listening on all network interfaces:
+
+   ```bash
+   cd ~/miniproject6
+   source .venv/bin/activate
+   export DJANGO_SECRET_KEY="$(cat ~/.miniproject6_secret_key)"
+   python manage.py runserver 0.0.0.0:8000
+   ```
+
+   To skip the `export` line in future sessions, add it to your `~/.bashrc`. Keeping the key in its
+   own private file keeps it out of your shell history and out of `~/.bashrc` itself, which other
+   users can often read.
+
+3. Open **http://dev-student14.fhsucyber.com:8000/** in your browser. If the dev box is served
+   through HTTPS, open **https://dev-student14.fhsucyber.com/** instead; both are allowed.
+
+**If port 8000 can't be reached from your network,** use an SSH tunnel. From your own computer:
 
 ```bash
-ssh -L 8000:127.0.0.1:8000 your-username@dev-box-hostname
+ssh -L 8000:127.0.0.1:8000 your-username@dev-student14.fhsucyber.com
 ```
 
-Then, in that SSH session, start the server:
+In that SSH session, run step 2 (`python manage.py runserver 8000` is enough here), then open
+**http://localhost:8000/** in the browser on your own computer.
 
-```bash
-cd ~/miniproject6coytmauch
-source .venv/bin/activate
-python manage.py runserver 8000
+Press **Ctrl+C** to stop the server.
+
+## Configuration
+
+The settings that differ between computers are in `config/settings.py`. Secrets are read from
+environment variables, so none is written in the code. **No variables are required** to run the
+project on localhost.
+
+- **Allowed host names** (`ALLOWED_HOSTS`): `localhost`, `127.0.0.1`, `[::1]`, and the course dev
+  box, `dev-student14.fhsucyber.com`. Requests for any other host name get *Bad Request (400)*.
+- **Trusted origins for forms** (`CSRF_TRUSTED_ORIGINS`): `http://dev-student14.fhsucyber.com:8000`,
+  `http://dev-student14.fhsucyber.com`, and `https://dev-student14.fhsucyber.com`, so logging in,
+  adding, and deleting work whether the dev box is opened directly on port 8000 or through HTTPS.
+- **Time zone:** `TIME_ZONE = 'America/Chicago'` (US Central), so "due today" and "overdue" change
+  at local midnight.
+
+| Environment variable | Default | Purpose |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | Django's development key | Signs sessions and CSRF tokens. Set your own on the dev box. **Required** when `DJANGO_DEBUG` is `False` or `DJANGO_SITE_HOSTNAME` is set. |
+| `DJANGO_DEBUG` | `True` | `False` turns off Django's debug pages. Note that `runserver` only serves the CSS file while debug is on. |
+| `DJANGO_SITE_HOSTNAME` | *(none)* | Optional extra host names for another server, comma-separated, without `http://` or a port. Not needed for the dev box. |
+
+To use your own secret key on Windows for the current PowerShell window:
+
+```powershell
+$env:DJANGO_SECRET_KEY = python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-Open **http://localhost:8000/** in the browser on your own computer.
-
-**Option B – open the dev box by its hostname.** Django only answers requests for host names listed
-in `ALLOWED_HOSTS`. The current setting is `ALLOWED_HOSTS = []`, which in development allows only
-`localhost` and `127.0.0.1`. To open the site at `http://dev-box-hostname:8000/`, first add the
-hostname in `config/settings.py`:
-
-```python
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dev-box-hostname']
-```
-
-Then start the server listening on all network interfaces:
-
-```bash
-python manage.py runserver 0.0.0.0:8000
-```
-
-In either case, press **Ctrl+C** to stop the server.
+On Linux, use the key file described in [Running the Server](#on-the-linux-dev-box-port-8000).
 
 ---
 
@@ -308,10 +352,13 @@ In either case, press **Ctrl+C** to stop the server.
    next 7 days.
 4. **Browse the list.** **Assignments** shows everything, and the tabs filter to Active, Completed,
    or Overdue. Click a title to open its details.
-5. **Delete an assignment.** On a detail page, click **Delete Assignment**. In the modal,
+5. **Edit or complete an assignment.** On a detail page, click **Edit** to change it, or
+   **Mark Complete** when it's finished (**Mark Not Completed** undoes it). In the list, each row's
+   **Complete** / **Undo** button does the same and keeps you on the current tab.
+6. **Delete an assignment.** On a detail page, click **Delete Assignment**. In the modal,
    **Cancel** closes it without changes, and **Confirm Delete** removes the assignment and returns
    you to the list.
-6. **Log out.** Click **Log out** in the navbar to return to the home page.
+7. **Log out.** Click **Log out** in the navbar to return to the home page.
 
 If you visit a private page while logged out, you're sent to the login page. After logging in, you
 return to the page you asked for.
@@ -338,7 +385,7 @@ section is customized in `planner/admin.py`:
 python manage.py test
 ```
 
-The test suite in `planner/tests.py` contains 26 tests and uses a temporary database, so your
+The test suite in `planner/tests.py` contains 37 tests and uses a temporary database, so your
 real data is never touched:
 
 | Group | What it checks |
@@ -347,27 +394,35 @@ real data is never touched:
 | Login / Logout (7) | Login redirects to the dashboard (or the requested page); a wrong password shows an error; logout rejects GET and works with POST |
 | Login required (3) | Every assignment page redirects logged-out visitors to the login page |
 | Ownership (5) | Lists and the dashboard show only your assignments; another user's detail page is a 404; a forged `owner` field is ignored |
+| Edit (5) | The form is pre-filled; the owner can save changes; invalid input saves nothing; the owner can't be changed; other users get 404 |
+| Mark complete (6) | Buttons appear on the detail and list pages; toggling works both ways and returns to the list tab; outside `next` URLs are ignored; GET requests and other users can't toggle |
 | Delete (6) | The modal and its form are present; the CSRF token is required; GET can't delete; other users and logged-out visitors can't delete |
 
 Test accounts use randomly generated passwords, so no passwords are written into the code.
 
 ## Security
 
-- **CSRF protection** – every POST form (add assignment, register, log in, log out, and delete)
-  includes `{% csrf_token %}`. Django rejects POSTs without a valid token with *403 Forbidden*.
+- **CSRF protection** – every POST form (add, edit, register, log in, log out, mark complete, and
+  delete) includes `{% csrf_token %}`. Django rejects POSTs without a valid token with *403 Forbidden*.
 - **Login required** – the dashboard and all assignment pages use `@login_required`.
 - **Per-user data** – every query is filtered by `owner=request.user`, and single assignments are
   loaded with `get_object_or_404(Assignment, pk=pk, owner=request.user)`. Another user's assignment
   returns 404, the same as one that doesn't exist.
 - **Owner can't be forged** – `owner` is not a form field; the view sets it from the logged-in user.
-- **Safe deletes** – the delete view accepts POST only (`@require_POST`), so a link or page prefetch
-  can never delete anything.
+- **POST-only changes** – the mark-complete and delete views accept POST only (`@require_POST`), so
+  a link or page prefetch can never change or delete anything. After marking an assignment
+  complete, the app only redirects back to addresses on this site.
 - **Passwords** – stored hashed by Django's authentication system and checked against
   `AUTH_PASSWORD_VALIDATORS`. No passwords or server credentials are written in the code; the
   superuser is created interactively.
-- **Development settings** – `config/settings.py` uses `DEBUG = True` and the development
-  `SECRET_KEY` that `django-admin startproject` generated. This is a development configuration for
-  running the project with `runserver`, not for a public production server.
+- **Secret key** – `SECRET_KEY` can be supplied through the `DJANGO_SECRET_KEY` environment
+  variable (see [Configuration](#configuration)). The fallback is the development key that
+  `django-admin startproject` generated; it is refused when debug is off, and the dev box
+  instructions give the server its own key.
+- **Host checks** – only the host names in `ALLOWED_HOSTS` are answered, and form submissions are
+  only accepted from the site's own address or the origins in `CSRF_TRUSTED_ORIGINS`.
+- **Development server** – the project is meant to run with `runserver` (debug on by default), not
+  on a public production server.
 
 ## Troubleshooting
 
@@ -379,7 +434,10 @@ Test accounts use randomly generated passwords, so no passwords are written into
 | `ModuleNotFoundError: No module named 'django'` | The virtual environment isn't active, or you skipped `pip install -r requirements.txt` |
 | `no such table: planner_assignment` | Run `python manage.py migrate` |
 | `Error: That port is already in use.` | Another server is using port 8000. Stop it (Ctrl+C in its terminal), then try again |
-| *Bad Request (400)* / `Invalid HTTP_HOST header` | The host name you opened isn't in `ALLOWED_HOSTS`; see [Running the Server](#running-the-server) |
+| *Bad Request (400)* / `Invalid HTTP_HOST header` | The host name you opened isn't allowed. Use `localhost`, `127.0.0.1`, or `dev-student14.fhsucyber.com`, or add another name with `DJANGO_SITE_HOSTNAME`; see [Configuration](#configuration) |
+| *Forbidden (403) – CSRF verification failed* | Reload the form and submit again. If you opened the site through an address not listed in [Configuration](#configuration), add it with `DJANGO_SITE_HOSTNAME` |
+| `ImproperlyConfigured: Set DJANGO_SECRET_KEY to your own secret key…` | You set `DJANGO_DEBUG=False` or `DJANGO_SITE_HOSTNAME` without a secret key. Set `DJANGO_SECRET_KEY` |
+| `ImproperlyConfigured: DJANGO_SITE_HOSTNAME must be a bare host name…` | Remove `http://`, any `:port`, and any trailing `/` from the value |
 | Pages look unstyled, or the delete modal won't open | Bootstrap loads from a CDN; check the browser's internet connection |
 | CSS changes don't appear | Hard-refresh the page (Ctrl+F5) |
 
