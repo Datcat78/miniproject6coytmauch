@@ -1,0 +1,25 @@
+{% extends 'planner/base.html' %}
+
+{% block title %}Add Assignment{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h1 class="h3 mb-4">Add Assignment</h1>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% include 'planner/includes/form_fields.html' %}
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save Assignment</button>
+                        <a href="{% url 'assignment_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'planner/base.html' %}
+
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-sm-10 col-md-7 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h1 class="h3 text-center mb-1">Log in</h1>
+                <p class="text-center text-body-secondary mb-4">Sign in to see your assignments.</p>
+
+                {% if next and not form.errors %}
+                    <div class="alert alert-info" role="alert">Please log in to view that page.</div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% include 'planner/includes/form_fields.html' %}
+                    {# Send the user back to the page they originally asked for. #}
+                    <input type="hidden" name="next" value="{{ next }}">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-box-arrow-in-right"></i> Log in
+                    </button>
+                </form>
+            </div>
+            <div class="card-footer bg-body text-center py-3">
+                Don't have an account? <a href="{% url 'register' %}">Register</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

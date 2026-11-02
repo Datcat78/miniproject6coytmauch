@@ -1,0 +1,7 @@
+{% if assignment.priority == assignment.Priority.HIGH %}
+    <span class="badge text-bg-danger">{{ assignment.get_priority_display }}</span>
+{% elif assignment.priority == assignment.Priority.MEDIUM %}
+    <span class="badge text-bg-warning">{{ assignment.get_priority_display }}</span>
+{% else %}
+    <span class="badge text-bg-secondary">{{ assignment.get_priority_display }}</span>
+{% endif %}

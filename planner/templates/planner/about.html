@@ -1,0 +1,36 @@
+{% extends 'planner/base.html' %}
+
+{% block title %}About{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="mb-3">About this project</h1>
+        <p class="lead">
+            Student Assignment Tracker is a Django web application built for
+            <strong>INF601 &ndash; Advanced Programming in Python</strong>, Mini Project 6.
+        </p>
+        <p>
+            Each student has a private list of assignments. Every assignment records its course,
+            due date, priority, and whether it is finished. Users can only see and manage their own work.
+        </p>
+
+        <h2 class="h4 mt-4">Features</h2>
+        <ul class="list-group mb-4">
+            <li class="list-group-item"><i class="bi bi-speedometer2 text-primary me-2"></i>A dashboard with progress, overdue work, and what's due this week</li>
+            <li class="list-group-item"><i class="bi bi-list-check text-primary me-2"></i>An assignment list you can filter by status</li>
+            <li class="list-group-item"><i class="bi bi-plus-square text-primary me-2"></i>A form for adding assignments with due dates and priorities</li>
+            <li class="list-group-item"><i class="bi bi-shield-lock text-primary me-2"></i>Private data: each user's assignments are visible only to them</li>
+            <li class="list-group-item"><i class="bi bi-gear text-primary me-2"></i>A customized Django admin site for managing all data</li>
+        </ul>
+
+        <h2 class="h4">Built with</h2>
+        <div class="d-flex flex-wrap gap-2">
+            <span class="badge rounded-pill text-bg-dark fs-6">Python</span>
+            <span class="badge rounded-pill text-bg-success fs-6">Django 5.2</span>
+            <span class="badge rounded-pill text-bg-secondary fs-6">SQLite</span>
+            <span class="badge rounded-pill text-bg-primary fs-6">Bootstrap 5</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

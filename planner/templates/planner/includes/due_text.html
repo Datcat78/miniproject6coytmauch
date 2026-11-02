@@ -1,0 +1,12 @@
+{% with days=assignment.days_until_due %}
+    {% if assignment.is_completed %}
+        Due {{ assignment.due_date|date:"M j, Y" }}
+    {% elif days == 0 %}
+        Due today
+    {% elif days > 0 %}
+        Due in {{ days }} day{{ days|pluralize }}
+    {% else %}
+        {# Templates have no abs() filter; widthratio(days, 1, -1) computes -days. #}
+        {% widthratio days 1 -1 as days_late %}{{ days_late }} day{{ days_late|pluralize }} overdue
+    {% endif %}
+{% endwith %}

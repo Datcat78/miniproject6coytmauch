@@ -1,0 +1,7 @@
+{% if assignment.is_completed %}
+    <span class="badge text-bg-success"><i class="bi bi-check-circle"></i> Completed</span>
+{% elif assignment.is_overdue %}
+    <span class="badge text-bg-danger"><i class="bi bi-exclamation-circle"></i> Overdue</span>
+{% else %}
+    <span class="badge text-bg-primary"><i class="bi bi-hourglass-split"></i> Active</span>
+{% endif %}
