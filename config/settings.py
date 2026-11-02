@@ -65,11 +65,18 @@ if SECRET_KEY.startswith('django-insecure') and (extra_hostnames or not DEBUG):
         'or DJANGO_DEBUG is off.'
     )
 
+# localhost always works for development; the site host name(s) are added to it.
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', *site_hostnames]
 
-ALLOWED_HOSTS = ["https://dev-student14.fhsucyber.com"]
-
-
-CSRF_TRUSTED_ORIGINS =  ["https://dev-student14.fhsucyber.com"]
+# Origins allowed to submit POST forms (log in, add, delete, ...). A browser
+# that opens http://<hostname>:8000/ directly already passes Django's
+# same-origin check; these entries also cover reaching the site through HTTPS
+# or a forwarding proxy in front of the dev box.
+CSRF_TRUSTED_ORIGINS = [
+    origin
+    for name in site_hostnames
+    for origin in (f'http://{name}:8000', f'http://{name}', f'https://{name}')
+]
 
 
 # Application definition
